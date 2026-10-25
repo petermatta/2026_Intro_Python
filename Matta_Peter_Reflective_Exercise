@@ -1,0 +1,345 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyO6xD4yzOeOe4bHW0r508W7",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/petermatta/2026_Intro_Python/blob/main/Matta_Peter_Reflective_Exercise\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# `Reflective Excercise `"
+      ],
+      "metadata": {
+        "id": "pNAY4tFnBQ_r"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "`1.3) Scientific Computing with numpy`"
+      ],
+      "metadata": {
+        "id": "pZ6XeS0xBcyO"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 26,
+      "metadata": {
+        "id": "VhQkkAOmBNU9"
+      },
+      "outputs": [],
+      "source": [
+        "import importlib.util\n",
+        "import subprocess\n",
+        "import sys\n",
+        "\n",
+        "for module, package in {\"gsw\": \"gsw\", \"pooch\": \"pooch\"}.items():\n",
+        "    if importlib.util.find_spec(module) is None:\n",
+        "        subprocess.run([sys.executable, \"-m\", \"pip\", \"install\", \"-q\", package], check=True)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Pre-supplied: download and unzip the Argo data files.\n",
+        "import pooch\n",
+        "\n",
+        "files = pooch.retrieve(\n",
+        "    url=\"https://raw.githubusercontent.com/gse-unil/2026_MLEES_book/main/data/part-I/argo_float_data.zip\",\n",
+        "    known_hash=\"sha256:dd913ba3450241bcd5d5697187ea68d398bdd7fd563a04cc74386834749c25f5\",\n",
+        "    processor=pooch.Unzip(),\n",
+        "    path=pooch.os_cache(\"mlees\"),\n",
+        ")\n",
+        "for f in sorted(files):\n",
+        "    print(f)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Z7W6xACrB1gm",
+        "outputId": "33fad94b-968c-4305-bb1a-7e969079253c"
+      },
+      "execution_count": 27,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "/root/.cache/mlees/3447957d2e428811e6534de5c131c0db-argo_float_data.zip.unzip/P.npy\n",
+            "/root/.cache/mlees/3447957d2e428811e6534de5c131c0db-argo_float_data.zip.unzip/S.npy\n",
+            "/root/.cache/mlees/3447957d2e428811e6534de5c131c0db-argo_float_data.zip.unzip/T.npy\n",
+            "/root/.cache/mlees/3447957d2e428811e6534de5c131c0db-argo_float_data.zip.unzip/date.npy\n",
+            "/root/.cache/mlees/3447957d2e428811e6534de5c131c0db-argo_float_data.zip.unzip/lat.npy\n",
+            "/root/.cache/mlees/3447957d2e428811e6534de5c131c0db-argo_float_data.zip.unzip/levels.npy\n",
+            "/root/.cache/mlees/3447957d2e428811e6534de5c131c0db-argo_float_data.zip.unzip/lon.npy\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "The reflective exercise is meant to focus on step 7-8, the following code is that of the preeceding steps, in order to be able to run step 7-8."
+      ],
+      "metadata": {
+        "id": "hlEbzqL6Cc2n"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from pathlib import Path\n",
+        "import numpy as np\n",
+        "\n",
+        "# Get the folder containing the downloaded Argo files\n",
+        "folder = Path(files[0]).parent\n",
+        "\n",
+        "# Load each NumPy array from its corresponding .npy file\n",
+        "T = np.load(folder / \"T.npy\")\n",
+        "S = np.load(folder / \"S.npy\")\n",
+        "P = np.load(folder / \"P.npy\")\n",
+        "date = np.load(folder / \"date.npy\")\n",
+        "lat = np.load(folder / \"lat.npy\")\n",
+        "lon = np.load(folder / \"lon.npy\")\n",
+        "level = np.load(folder / \"levels.npy\")\n",
+        "# Pre-supplied: the conservative-temperature function from the gsw library\n",
+        "%pip install gsw\n",
+        "from gsw import CT_from_t\n",
+        "# Compute conservative temperature from salinity, temperature, and pressure\n",
+        "conservative_temp = CT_from_t(S, T, P)\n",
+        "\n",
+        "# Constants for the relative density formula\n",
+        "a = 7.718e-1\n",
+        "b = -8.44e-2\n",
+        "c = -4.561e-3\n",
+        "\n",
+        "# Compute seawater density relative to pure water\n",
+        "relative_density = a * S + b * conservative_temp + c * conservative_temp**2\n",
+        "# Print the shape of the result\n",
+        "print(relative_density.shape)\n",
+        "\n",
+        "# Check that the result has the same shape as T\n",
+        "print(relative_density.shape == T.shape)\n",
+        "# Calculate the mean at each depth across all profiles\n",
+        "T_mean = np.mean(T, axis=0)\n",
+        "S_mean = np.mean(S, axis=0)\n",
+        "P_mean = np.mean(P, axis=0)\n",
+        "relative_density_mean = np.mean(relative_density, axis=0)\n",
+        "\n",
+        "# Calculate the standard deviation at each depth across all profiles\n",
+        "T_std = np.std(T, axis=0)\n",
+        "S_std = np.std(S, axis=0)\n",
+        "P_std = np.std(P, axis=0)\n",
+        "relative_density_std = np.std(relative_density, axis=0)\n",
+        "# Count the missing values in T\n",
+        "n_missing = np.isnan(T).sum()\n",
+        "\n",
+        "# Calculate the percentage of missing values\n",
+        "missing_percentage = n_missing / T.size * 100\n",
+        "\n",
+        "\n",
+        "# Recompute the means at each depth, ignoring NaN values\n",
+        "T_mean = np.nanmean(T, axis=0)\n",
+        "S_mean = np.nanmean(S, axis=0)\n",
+        "P_mean = np.nanmean(P, axis=0)\n",
+        "relative_density_mean = np.nanmean(relative_density, axis=0)\n",
+        "\n",
+        "# Recompute the standard deviations at each depth, ignoring NaN values\n",
+        "T_std = np.nanstd(T, axis=0)\n",
+        "S_std = np.nanstd(S, axis=0)\n",
+        "P_std = np.nanstd(P, axis=0)\n",
+        "relative_density_std = np.nanstd(relative_density, axis=0)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "jGTMne_HCHPc",
+        "outputId": "ed0a3b84-7961-412d-b739-6eb561c59d8c"
+      },
+      "execution_count": 33,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Requirement already satisfied: gsw in /usr/local/lib/python3.13/dist-packages (3.6.23)\n",
+            "Requirement already satisfied: numpy>=2 in /usr/local/lib/python3.13/dist-packages (from gsw) (2.1.3)\n",
+            "(78, 75)\n",
+            "True\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "step7: Using np.where, build an array that labels each depth \"warm\" where the mean temperature there is above 10 °C and \"cold\" otherwise. Print the first ten labels alongside the first ten depths.\n",
+        "\n",
+        "Then, using a boolean mask, print the depths at which the mean temperature is below 5 °C."
+      ],
+      "metadata": {
+        "id": "HQCXpg92D_mJ"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#At first i wrote the following code:\n",
+        "if np.where(T_mean > 10):\n",
+        "    return \"warm\"\n",
+        "else:\n",
+        "    return \"cold\"\n",
+        "    mask = T_mean < 5\n",
+        "print(\"Depths where mean temperature is below 5 °C:\", mask)\n",
+        "#the previous code obviously did not work, but I was still thinking of lecture 1 and 2, and did not pay attention on how to accuratly use the function.\n",
+        "#Furthermore, print(mask), checked if each value was below or above 5, and so printed false for every single one, rather than printing the depths at wich mean temp is below 5.\n",
+        "#so i realized i needed to print the mask at specific levels and not in general.\n",
+        "#so after a few tries, i wrote level_used = level[:len(T_mean)]\n",
+        "#Where, len(T_mean) gives the number of mean temperature values.\n",
+        "#level[:len(T_mean)] slices and selects the same number of depth values, starting from the beginning."
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 106
+        },
+        "id": "BTDMrWzlGscD",
+        "outputId": "57d4e6a5-4d79-4087-e22d-452799eec8b6"
+      },
+      "execution_count": 34,
+      "outputs": [
+        {
+          "output_type": "error",
+          "ename": "SyntaxError",
+          "evalue": "'return' outside function (931108970.py, line 3)",
+          "traceback": [
+            "\u001b[0;36m  File \u001b[0;32m\"/tmp/ipykernel_8352/931108970.py\"\u001b[0;36m, line \u001b[0;32m3\u001b[0m\n\u001b[0;31m    return \"warm\"\u001b[0m\n\u001b[0m    ^\u001b[0m\n\u001b[0;31mSyntaxError\u001b[0m\u001b[0;31m:\u001b[0m 'return' outside function\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# correct code:\n",
+        "is_warm = np.where(T_mean > 10, \"warm\", \"cold\")\n",
+        "print(\"First ten labels:\", is_warm[:10])\n",
+        "level_used = level[:len(T_mean)]\n",
+        "mask = T_mean < 5\n",
+        "print(\"Depths where mean temperature is below 5 °C:\", level_used[mask])"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "zVmKHpHRD_D0",
+        "outputId": "fb64be0e-bb6f-4c56-f3dd-b52ad82e4977"
+      },
+      "execution_count": 35,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "First ten labels: ['warm' 'warm' 'warm' 'warm' 'warm' 'warm' 'warm' 'warm' 'warm' 'warm']\n",
+            "Depths where mean temperature is below 5 °C: []\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Step 8: Assemble a summary array with np.vstack: one row of depths, one of mean temperature, one of mean salinity, and one of mean relative density — four rows in total.\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "OSMiOo1zEEbw"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#At first i wrote the following code:\n",
+        "argo_summary = np.vstack([\n",
+        "    level,\n",
+        "    T_mean,\n",
+        "    S_mean,\n",
+        "    relative_density_mean\n",
+        "])\n",
+        "#I recieved the following error: \"all the input array dimensions except for the concatenation axis must match exactly, but along dimension 1, the array at index 0 has size 78 and the array at index 1 has size 75\". Which means that one of the arrays i used does not have the same length as the others\n",
+        "#since all the means have the same length as they were computed the same way, it meant i had to change the level, and realized i made a similar mistake in step7, and so used level_used and not level."
+      ],
+      "metadata": {
+        "id": "yMlhvisWEMKN"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Correct code:\n",
+        "argo_summary = np.vstack([\n",
+        "    level_used,\n",
+        "    T_mean,\n",
+        "    S_mean,\n",
+        "    relative_density_mean\n",
+        "])\n",
+        "\n",
+        "print(\"Summary shape:\", argo_summary.shape)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "II8O2xdIKDtw",
+        "outputId": "a715d593-a616-4c7c-fec3-27a1d019fd95"
+      },
+      "execution_count": 36,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Summary shape: (4, 75)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "step 9-11 are not included as they focus on lecture 4 and not numpy."
+      ],
+      "metadata": {
+        "id": "uRxkG7OdD0SV"
+      }
+    }
+  ]
+}
